@@ -44,7 +44,7 @@ public class CustomHeuristics
 		double OffensiveValue = getNewOffensiveHeuristicValue(node);
 		double DefensiveValue = getNewDefensiveHeuristics(node);
 		double BoardpositionValue = getBoardHeuristicValue(node);
-		return Math.max((OffensiveValue + DefensiveValue + BoardpositionValue), 0);
+		return OffensiveValue + DefensiveValue + BoardpositionValue;
 	}
 	
 	
@@ -55,7 +55,7 @@ public class CustomHeuristics
 			Player maxPlayer = DefaultHeuristics.getMaxPlayer(node);
 			Player minPlayer = DefaultHeuristics.getMinPlayer(node);
 			Game game = node.getGame();
-			return Math.max(getPieceAdvantage(maxPlayer,game) - getPieceAdvantage(minPlayer, game),0);
+			return getPieceAdvantage(maxPlayer,game) - getPieceAdvantage(minPlayer, game);
 		}
 		
 		
@@ -65,7 +65,7 @@ public class CustomHeuristics
 			int pieceScore = 0;
 			for(PieceType pieceType : PieceType.values())
 			{
-				pieceScore += (game.getNumberOfAlivePieces(player, pieceType)) * Piece.getPointValue(pieceType);
+				pieceScore += (game.getNumberOfAlivePieces(player, pieceType)) * Piece.getPointValue(pieceType) * 2;
 			}
 			return pieceScore;
 		}
@@ -86,14 +86,14 @@ public class CustomHeuristics
 			Game game = node.getGame();
 			Player maxPlayer = DefaultHeuristics.getMaxPlayer(node);
 			Player minPlayer = DefaultHeuristics.getMinPlayer(node);
-			return Math.max((calculateMobilityScore(game, maxPlayer) - calculateMobilityScore(game, minPlayer)), 0);
+			return calculateMobilityScore(game, maxPlayer) - calculateMobilityScore(game, minPlayer);
 		}
 		
 		public static double getPointsEarnedScore(DFSTreeNode node) {
 			Game game = node.getGame();
 			Player maxPlayer = DefaultHeuristics.getMaxPlayer(node);
 			Player minPlayer = DefaultHeuristics.getMinPlayer(node);
-			return Math.max((game.getBoard().getPointsEarned(maxPlayer) - game.getBoard().getPointsEarned(minPlayer)), 0);
+			return game.getBoard().getPointsEarned(maxPlayer) - game.getBoard().getPointsEarned(minPlayer);
 		}
 		
 		
@@ -159,8 +159,8 @@ public class CustomHeuristics
 			Game currentGame = node.getGame();
 			Player player = DefaultHeuristics.getMaxPlayer(node);
 			Player enemyPlayer = DefaultHeuristics.getMinPlayer(node);	
-			return Math.max((getNumberOfPiecesPlayerIsThreateningScore(currentGame, player) 
-					- getNumberOfPiecesPlayerIsThreateningScore(currentGame, enemyPlayer)), 0);
+			return getNumberOfPiecesPlayerIsThreateningScore(currentGame, player) 
+					- getNumberOfPiecesPlayerIsThreateningScore(currentGame, enemyPlayer);
 		}
 		
 		
@@ -230,61 +230,43 @@ public class CustomHeuristics
 			Player player = node.getMaxPlayer();
 			Player enemyPlayer = DefaultHeuristics.getMinPlayer(node);
 			Game game = node.getGame();
-			return Math.max((getKingInDangerScore(enemyPlayer, game) - getKingInDangerScore(player, game)), 0);
+			return getKingInDangerScore(enemyPlayer, game) - getKingInDangerScore(player, game);
 			
 		}
 		
 		
 		public static double getRatioOfNumberOfPiecesAttcking(DFSTreeNode node) {
 			//return number of max player pieces attacking - number of max player pieces (want a positive ratio)
-			return Math.max((DefaultHeuristics.OffensiveHeuristics.getNumberOfPiecesMaxPlayerIsThreatening(node) -
-					DefaultHeuristics.DefensiveHeuristics.getNumberOfPiecesThreateningMaxPlayer(node)), 0);
+			return DefaultHeuristics.OffensiveHeuristics.getNumberOfPiecesMaxPlayerIsThreatening(node) -
+					DefaultHeuristics.DefensiveHeuristics.getNumberOfPiecesThreateningMaxPlayer(node);
 		}
 		
+			
 		
+		public static double CastleScore(DFSTreeNode node, Player player, Game currentGame) {
+			double score = 0;
+			Set<Piece> pieces = currentGame.getBoard().getPieces(player, PieceType.ROOK);
+			pieces.addAll(currentGame.getBoard().getPieces(player, PieceType.KING));
+			for(Piece piece : pieces)
+			{
+				for (Move move : currentGame.getAllMovesForPiece(player, piece)) {
+					if (move.getType() == MoveType.CASTLEMOVE) {
+						score += getKingDangerScore(node) * 1.5;
+					}
+				}
+			}
+			return score;
+		}
 		
+
 		
-		
-		
-		
-//		public static double CastleScore(DFSTreeNode node) {
-//			double score = 0;
-//			Game currentGame = node.getGame();
-//			Player player = currentGame.getCurrentPlayer();
-//			Set<Piece> pieces = currentGame.getBoard().getPieces(player, PieceType.ROOK);
-//			pieces.addAll(currentGame.getBoard().getPieces(player, PieceType.KING));
-//			for(Piece piece : pieces)
-//			{
-//				for (Move move : currentGame.getAllMovesForPiece(player, piece)) {
-//					if (move.getType() == MoveType.CASTLEMOVE) {
-//						score += 1;
-//					}
-//				}
-//			}
-//			return score;
-//		}
-//		
-//		public static double enemyCastleScore(DFSTreeNode node) {
-//			double score = 0;
-//			Game currentGame = node.getGame();
-//			Player player = currentGame.getOtherPlayer();
-//			Set<Piece> pieces = currentGame.getBoard().getPieces(player, PieceType.ROOK);
-//			pieces.addAll(currentGame.getBoard().getPieces(player, PieceType.KING));
-//			for(Piece piece : pieces)
-//			{
-//				for (Move move : currentGame.getAllMovesForPiece(player, piece)) {
-//					if (move.getType() == MoveType.CASTLEMOVE) {
-//						score -= 1;
-//					}
-//				}
-//			}
-//			return score;
-//		}
-//		
-//		public static double getCastleScore(DFSTreeNode node) {
-//			return Math.max(CastleScore(node) + enemyCastleScore(node), 0);
-//			
-//		}
+		public static double getCastleScore(DFSTreeNode node) {
+			Player player = node.getMaxPlayer();
+			Player enemyPlayer = DefaultHeuristics.getMinPlayer(node);
+			Game game = node.getGame();
+			return CastleScore(node, player, game) - CastleScore(node, enemyPlayer, game);
+			
+		}
 		
 		
 		
@@ -315,7 +297,7 @@ public class CustomHeuristics
 		// Get function that calls all methods in NewDefensiveHeuristics Class
 		return DefaultHeuristics.DefensiveHeuristics.getClampedPieceValueTotalSurroundingMaxPlayersKing(node) + 
 				newDefensiveHeuristics.getKingDangerScore(node) + DefaultHeuristics.DefensiveHeuristics.getNumberOfMaxPlayersAlivePieces(node) + 
-				newDefensiveHeuristics.getRatioOfNumberOfPiecesAttcking(node);
+				newDefensiveHeuristics.getRatioOfNumberOfPiecesAttcking(node) + newDefensiveHeuristics.getCastleScore(node);
 	}
 	
 	public static double getBoardHeuristicValue(DFSTreeNode node) {
