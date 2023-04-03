@@ -84,15 +84,14 @@ public class AlphaBetaAgent extends ChessAgent
 			} else // we can get the children of this node and find its best value
 			{
 				List<DFSTreeNode> children = node.getChildren();
-				PriorityQueue<DFSTreeNode> sortedChildren = CustomMoveOrderer.order(children);
+				List<DFSTreeNode> sortedChildren = CustomMoveOrderer.order(children);
 				double bestUtilityValue;
 				DFSTreeNode bestNode = null;
 				if(node.getType() == DFSTreeNodeType.MAX)
 				{
 					bestUtilityValue = Double.NEGATIVE_INFINITY;
-					while (!sortedChildren.isEmpty())
+					for (DFSTreeNode child :sortedChildren)
 					{
-						DFSTreeNode child = sortedChildren.poll();
 						child.setMaxPlayerUtilityValue(this.alphaBetaSearch(child, depth-1, alpha, beta).getMaxPlayerUtilityValue());
 						if(child.getMaxPlayerUtilityValue() > bestUtilityValue)
 						{
@@ -108,9 +107,8 @@ public class AlphaBetaAgent extends ChessAgent
 				{
 					// min
 					bestUtilityValue = Double.POSITIVE_INFINITY;
-					while(!sortedChildren.isEmpty())
+					for (DFSTreeNode child :sortedChildren)
 					{
-						DFSTreeNode child = sortedChildren.poll();
 						child.setMaxPlayerUtilityValue(this.alphaBetaSearch(child, depth-1, alpha, beta).getMaxPlayerUtilityValue());
 						if(child.getMaxPlayerUtilityValue() < bestUtilityValue)
 						{
@@ -136,7 +134,7 @@ public class AlphaBetaAgent extends ChessAgent
 		}
 		
 		
-		public DFSTreeNode quiescence_search(DFSTreeNode node, double alpha, double beta)
+		 DFSTreeNode quiescence_search(DFSTreeNode node, double alpha, double beta)
 		// iterate search for alphaBetaSearch
 		{
 			if(node.isTerminal()) // terminal state!
@@ -144,36 +142,52 @@ public class AlphaBetaAgent extends ChessAgent
 				return node;
 			} else // we can get the children of this node and find its best value
 			{
-				double bestUtilityValue = node.getMaxPlayerUtilityValue();
-				if (bestUtilityValue >= beta)  {
-					node.setMaxPlayerUtilityValue(beta);
-					return node;
-				}
-				if (bestUtilityValue < bestUtilityValue) {
-					alpha = bestUtilityValue;
-				}
+				
 				List<DFSTreeNode> children = node.getChildren();
-				PriorityQueue<DFSTreeNode> sortedChildren = CustomMoveOrderer.order(children);
-					
-				
-				while(!sortedChildren.isEmpty())
+				List<DFSTreeNode> sortedChildren = CustomMoveOrderer.order(children);
+				double bestUtilityValue;
+				DFSTreeNode bestNode = node;
+				if(node.getType() == DFSTreeNodeType.MAX)
 				{
-					DFSTreeNode child = sortedChildren.poll();
-					if (is_quiescence(node)) {
-						child.setMaxPlayerUtilityValue(-(this.quiescence_search(child, -alpha, -beta).getMaxPlayerUtilityValue()));
-						if( child.getMaxPlayerUtilityValue() >= beta)
+					bestUtilityValue = Double.NEGATIVE_INFINITY;
+					for (DFSTreeNode child :sortedChildren)
+					{
+						if (is_quiescence(child))
 						{
-							child.setMaxPlayerUtilityValue(beta);
-							return child;
+							child.setMaxPlayerUtilityValue(this.quiescence_search(child, alpha, beta).getMaxPlayerUtilityValue());
+							if(child.getMaxPlayerUtilityValue() > bestUtilityValue)
+							{
+								bestUtilityValue = child.getMaxPlayerUtilityValue();
+								bestNode = child;
+								alpha = Math.max(alpha, bestNode.getMaxPlayerUtilityValue());
+								if (beta <= alpha) {
+									break;
+								}
+							}
 						}
-						if (child.getMaxPlayerUtilityValue() > alpha) {
-							alpha = child.getMaxPlayerUtilityValue();
+					}
+				} else
+				{
+					// min
+					bestUtilityValue = Double.POSITIVE_INFINITY;
+					for (DFSTreeNode child :sortedChildren)
+					{
+						if (is_quiescence(child))
+						{
+							child.setMaxPlayerUtilityValue(this.quiescence_search(child, alpha, beta).getMaxPlayerUtilityValue());
+							if(child.getMaxPlayerUtilityValue() < bestUtilityValue)
+							{
+								bestUtilityValue = child.getMaxPlayerUtilityValue();
+								bestNode = child;
+								beta = Math.min(alpha, bestNode.getMaxPlayerUtilityValue());
+								if (beta <= alpha) {
+									break;
+								}
+							}
 						}
-					}	
+					}
 				}
-				
-				node.setMaxPlayerUtilityValue(alpha);
-				return node;
+				return bestNode;
 			}
 		}
 		
@@ -222,7 +236,7 @@ public class AlphaBetaAgent extends ChessAgent
 	{
 		super(playerID);
 		long maxPlaytimeInMS = 0;
-		int maxDepth = 10;
+		int maxDepth = 3;
 		String playerTypeString = null;
 		String filePath = null;
 		memoTable = new HashMap<>();
@@ -312,6 +326,7 @@ public class AlphaBetaAgent extends ChessAgent
 		} catch(TimeoutException e)
 		{
 			// timeout = out of time...get ready to end the game (by subtracting all of the time we had left)
+			System.out.println("AlphaBetaAgent for player=" + this.getPlayer() + " ran out of time and lost the game!");
 			durationInMs = this.getMaxPlaytimeInMS();
 		} catch(InterruptedException e)
 		{

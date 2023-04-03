@@ -12,8 +12,8 @@ public class DFSTreeNode extends Object
 
 	private static class UtilityConstants extends Object
 	{
-		private static final double MAXPLAYERLOSS = 0;
-		private static final double MAXPLAYERTIE = 15;
+		private static final double MAXPLAYERLOSS = Double.MIN_VALUE;
+		private static final double MAXPLAYERTIE = 0;
 		private static final double MAXPLAYERWIN = Double.MAX_VALUE;
 	}
 

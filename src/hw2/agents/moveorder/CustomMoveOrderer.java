@@ -1,6 +1,7 @@
 package hw2.agents.moveorder;
 
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -18,17 +19,28 @@ public class CustomMoveOrderer
 	 * @param nodes. The nodes to order (these are children of a DFSTreeNode) that we are about to consider in the search.
 	 * @return The ordered nodes.
 	 */
-	public static PriorityQueue<DFSTreeNode> order(List<DFSTreeNode> nodes)
+	public static List<DFSTreeNode> order(List<DFSTreeNode> nodes)
 	{
 		// please replace this!
 		//return DefaultMoveOrderer.order(nodes);
 		return orderingMoves(nodes);
 	}
 	
-	public static PriorityQueue<DFSTreeNode> orderingMoves(List<DFSTreeNode> children) {
-		PriorityQueue<DFSTreeNode> sortedChildren = new PriorityQueue<>(Comparator.comparingDouble(DFSTreeNode::getMaxPlayerUtilityValue).reversed());
-        sortedChildren.addAll(children);
-        return sortedChildren;
+	public static List<DFSTreeNode> orderingMoves(List<DFSTreeNode> children) {
+		Collections.sort(children, new Comparator<DFSTreeNode>()
+		{
+			public int compare(DFSTreeNode node1, DFSTreeNode node2) {
+		        double diff = node1.getMaxPlayerUtilityValue() - node2.getMaxPlayerUtilityValue();
+		        if (diff < 0) {
+		            return -1;
+		        } else if (diff > 0) {
+		            return 1;
+		        } else {
+		            return 0;
+		        }
+		    }
+		}); 
+        return children;
 	}
 
 }
