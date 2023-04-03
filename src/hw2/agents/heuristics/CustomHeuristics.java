@@ -270,6 +270,10 @@ public class CustomHeuristics
 		
 		
 		
+		
+		
+		
+		
 	} // End of newDefensiveHeuristics class
 	
 	

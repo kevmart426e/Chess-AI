@@ -75,7 +75,7 @@ public class AlphaBetaAgent extends ChessAgent
 			} else if(depth <= 0) // reached the end of the depth!
 			{
 				if (is_quiescence(node)) {
-					node = quiescence_search(node, alpha, beta);
+					node = quiescence_search(node, alpha, beta, 5);
 				}
 				// assign heuristic value to the child as its utility
 				node.setMaxPlayerUtilityValue(CustomHeuristics.getHeuristicValue(node));
@@ -134,11 +134,14 @@ public class AlphaBetaAgent extends ChessAgent
 		}
 		
 		
-		 DFSTreeNode quiescence_search(DFSTreeNode node, double alpha, double beta)
+		 DFSTreeNode quiescence_search(DFSTreeNode node, double alpha, double beta, int depth)
 		// iterate search for alphaBetaSearch
 		{
 			if(node.isTerminal()) // terminal state!
 			{
+				return node;
+			} else if (depth <= 0) {
+				node.getMaxPlayerUtilityValue();
 				return node;
 			} else // we can get the children of this node and find its best value
 			{
@@ -154,7 +157,7 @@ public class AlphaBetaAgent extends ChessAgent
 					{
 						if (is_quiescence(child))
 						{
-							child.setMaxPlayerUtilityValue(this.quiescence_search(child, alpha, beta).getMaxPlayerUtilityValue());
+							child.setMaxPlayerUtilityValue(this.quiescence_search(child, alpha, beta, depth-1).getMaxPlayerUtilityValue());
 							if(child.getMaxPlayerUtilityValue() > bestUtilityValue)
 							{
 								bestUtilityValue = child.getMaxPlayerUtilityValue();
@@ -174,7 +177,7 @@ public class AlphaBetaAgent extends ChessAgent
 					{
 						if (is_quiescence(child))
 						{
-							child.setMaxPlayerUtilityValue(this.quiescence_search(child, alpha, beta).getMaxPlayerUtilityValue());
+							child.setMaxPlayerUtilityValue(this.quiescence_search(child, alpha, beta, depth-1).getMaxPlayerUtilityValue());
 							if(child.getMaxPlayerUtilityValue() < bestUtilityValue)
 							{
 								bestUtilityValue = child.getMaxPlayerUtilityValue();
