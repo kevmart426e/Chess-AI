@@ -105,15 +105,15 @@ public class CustomHeuristics
 		}
 		
 		public static double getcenterBoardScore(DFSTreeNode node) {
-			double score = 0;
+			double val = 0;
 			Game game = node.getGame();
 			Player maxPlayer = DefaultHeuristics.getMaxPlayer(node);
 			for(Piece piece : game.getBoard().getPieces(maxPlayer)) {
 				if (isInCenter(game.getBoard(), piece)) {
-					score += 1;
+					val += 1;
 				}
 			}
-			return score;
+			return val;
 		}
 		
 
