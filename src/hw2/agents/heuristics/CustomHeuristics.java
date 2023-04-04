@@ -1,32 +1,20 @@
 package hw2.agents.heuristics;
 
-import java.util.List;
-import java.util.Set;
-
 import hw2.chess.game.Board;
-import hw2.chess.game.Game;
-import hw2.chess.game.piece.Piece;
-import hw2.chess.game.piece.PieceType;
-import hw2.chess.game.planning.Planner;
+import hw2.chess.game.move.CaptureMove;
+import hw2.chess.game.move.Move;
+import hw2.chess.game.move.MovementMove;
+import hw2.chess.game.piece.*;
 import hw2.chess.game.player.Player;
 import hw2.chess.game.player.PlayerType;
 import hw2.chess.search.DFSTreeNode;
-import hw2.chess.search.DFSTreeNodeType;
 import hw2.chess.utils.Coordinate;
-import hw2.chess.game.move.CaptureMove;
-import hw2.chess.game.move.Move;
-import hw2.chess.game.move.MoveType;
-import hw2.chess.game.move.PromotePawnMove;
 
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class CustomHeuristics
 {
-	// Weights for chess pieces
-	public static final int PAWN_WEIGHT = 1;
-	public static final int KNIGHT_WEIGHT = 3;
-	public static final int BISHOP_WEIGHT = 3;
-	public static final int ROOK_WEIGHT = 5;
-	public static final int QUEEN_WEIGHT = 9;
 
 	/**
 	 * TODO: implement me! The heuristics that I wrote are useful, but not very good for a good chessbot.
@@ -35,283 +23,311 @@ public class CustomHeuristics
 	 */
 	public static double getHeuristicValue(DFSTreeNode node)
 	{
-		// please replace this!
-//		double testMaterial = BoardHeuristics.calculateMaterialAdvantage(node);
-//		double testAttackingVal = newOffensiveHeuristics.getValueOfAttackingPieces(node);
-//		
-//		return DefaultHeuristics.getHeuristicValue(node) + testMaterial + testAttackingVal;	
-//		return DefaultHeuristics.getMaxPlayerHeuristicValue(node);
-		double OffensiveValue = getNewOffensiveHeuristicValue(node);
-		double DefensiveValue = getNewDefensiveHeuristics(node);
-		double BoardpositionValue = getBoardHeuristicValue(node);
-		return OffensiveValue + DefensiveValue + BoardpositionValue;
-	}
-	
-	
-	public static class BoardHeuristics extends Object {
-		//Start of BoardHeuristic Class
-		
-		public static double calculateMaterialAdvantage(DFSTreeNode node) {
-			Player maxPlayer = DefaultHeuristics.getMaxPlayer(node);
-			Player minPlayer = DefaultHeuristics.getMinPlayer(node);
-			Game game = node.getGame();
-			return getPieceAdvantage(maxPlayer,game) - getPieceAdvantage(minPlayer, game);
-		}
-		
-		
-		
-		public static double getPieceAdvantage(Player player, Game game) {
-			//Returns the calculation for calculateMaterialAdvantage method
-			int pieceScore = 0;
-			for(PieceType pieceType : PieceType.values())
-			{
-				pieceScore += (game.getNumberOfAlivePieces(player, pieceType)) * Piece.getPointValue(pieceType) * 2;
-			}
-			return pieceScore;
-		}
-		
-		
-		public static double calculateMobilityScore(Game game, Player player) {
-			//Returns the mobility score
-			double mobilityVal = 0;
-			for(Piece piece : game.getBoard().getPieces(player)) {
-				mobilityVal += game.getAllMovesForPiece(player, piece).size();
-			}
-			
-			return mobilityVal;
-		}
-		
-		public static double getMobilityScore(DFSTreeNode node) {
-			// Gets the mobility score which is the max mobility minus the min mobility score
-			Game game = node.getGame();
-			Player maxPlayer = DefaultHeuristics.getMaxPlayer(node);
-			Player minPlayer = DefaultHeuristics.getMinPlayer(node);
-			return calculateMobilityScore(game, maxPlayer) - calculateMobilityScore(game, minPlayer);
-		}
-		
-		public static double getPointsEarnedScore(DFSTreeNode node) {
-			Game game = node.getGame();
-			Player maxPlayer = DefaultHeuristics.getMaxPlayer(node);
-			Player minPlayer = DefaultHeuristics.getMinPlayer(node);
-			return game.getBoard().getPointsEarned(maxPlayer) - game.getBoard().getPointsEarned(minPlayer);
-		}
-		
-		
-		public static boolean isInCenter(Board board, Piece piece) {
-			Coordinate points = board.getPiecePosition(piece);
-			int X = points.getXPosition();
-			int Y = points.getYPosition();
-			return ((X == 3 || X == 4) && (Y == 3 || Y == 4) );	
-		}
-		
-		public static double getcenterBoardScore(DFSTreeNode node) {
-			double val = 0;
-			Game game = node.getGame();
-			Player maxPlayer = DefaultHeuristics.getMaxPlayer(node);
-			for(Piece piece : game.getBoard().getPieces(maxPlayer)) {
-				if (isInCenter(game.getBoard(), piece)) {
-					val += 1;
-				}
-			}
-			return val;
-		}
-		
 
-	} //End of BoardHeuristic Class
-	
-	
-	
-	public static class newOffensiveHeuristics extends Object {
-		//Class for calculating offensive Heuristic weight
-		
-		
-		public static double getNumberOfPiecesPlayerIsThreateningScore(Game currentGame, Player player)
-		// helper for getValueOfAttackingPieces method, returns the number of attacking pieces value
-		{
-			int attackScore = 0;
-			for(Piece piece : currentGame.getBoard().getPieces(player))
-			{
-				attackScore += piece.getAllCaptureMoves(currentGame).size() * captureMoveScore(currentGame.getBoard(), piece, piece.getAllCaptureMoves(currentGame));
-			}
-			return attackScore;
-		}
-		
-		
-		public static double captureMoveScore(Board board, Piece currentPiece, List<Move> pieceMoves) {
-			/* Takes current board being simulated on, chess piece, and simulated moves, and return the score based on how 
-			 * valuable the pieces that can be captured are
-			 */
-			double score = 0; // return value
-			int simulatedPlayersPieceID = currentPiece.getPieceID();
-			for(Move move : pieceMoves)
-			{
-				Player simulatedPlayer = move.getActorPlayer();
-				Piece pieceThatWasCaptured = board.getPieceAtPosition(board.getPiecePosition(simulatedPlayer, simulatedPlayersPieceID));
-				score += Piece.getPointValue(pieceThatWasCaptured.getType()); //Piece.getPointValue(currentPiece.getType());
-			}
-			return score;
-		}
-		
-		
-		public static double getValueOfAttackingPieces(DFSTreeNode node)
-		// returns the calculation for number of pieces that can be threaten
-		{
-			Game currentGame = node.getGame();
-			Player player = DefaultHeuristics.getMaxPlayer(node);
-			Player enemyPlayer = DefaultHeuristics.getMinPlayer(node);	
-			return getNumberOfPiecesPlayerIsThreateningScore(currentGame, player) 
-					- getNumberOfPiecesPlayerIsThreateningScore(currentGame, enemyPlayer);
-		}
-		
-		
-		public static boolean isPieceForkable(Piece piece, Game game) {
-			// return True if piece has more than one option to attack pieces
-			return piece.getAllCaptureMoves(game).size() > 1;
-		}
-		
-		public static double pieceForkableScore(Board board, Piece currentPiece, List<Move> pieceMoves) {
-			// return fork value, where one piece attacks two or more of the opponent's pieces at the same time 
-			double score = 0; 
-			int simulatedPlayersPieceID = currentPiece.getPieceID();
-			for(Move move : pieceMoves)
-			{
-				Player simulatedPlayer = move.getActorPlayer();
-				Piece pieceThatWasCaptured = board.getPieceAtPosition(board.getPiecePosition(simulatedPlayer, simulatedPlayersPieceID));
-				if (pieceThatWasCaptured.getType() != currentPiece.getType()) {
-					score += Piece.getPointValue(pieceThatWasCaptured.getType());
-				}
-			}
-			return score;
-		}
-		
-		public static double getValueOfPieceFork(DFSTreeNode node) {
-			double score = 0;
-			Board board = node.getGame().getBoard();
-			for(Piece piece : board.getPieces(DefaultHeuristics.getMaxPlayer(node))) {
-				if (isPieceForkable(piece, node.getGame())) {
-					score += pieceForkableScore(board, piece, piece.getAllCaptureMoves(node.getGame()));
-				}
-			}
-			return score;
-		}
-		
-		
-	} // End of newOffensiveHeuristics class
-	
-	
-	
-	public static class newDefensiveHeuristics extends Object {
-		// Does the calculation of Defensive Heuristic weight
-		
-		
-		public static double getKingInDangerScore(Player player, Game currentGame) {
-			// returns sum of the value of pieces threating player's king
-			double score = 0;
-			Piece ourKing = currentGame.getBoard().getPieces(player, PieceType.KING).iterator().next();
-			Board board = currentGame.getBoard();
-			for(Piece enemyPiece : currentGame.getBoard().getPieces(currentGame.getOtherPlayer(player)))
-			{
-				for(Move captureMove : enemyPiece.getAllCaptureMoves(currentGame))
-				{
-					if(((CaptureMove)captureMove).getTargetPieceID() == ourKing.getPieceID() &&
-							((CaptureMove)captureMove).getTargetPlayer() == player)
-					{
-						int pieceThatCaptureKingID = ((CaptureMove)captureMove).getAttackingPieceID();
-						Piece pieceThatCaptureKing = board.getPieceAtPosition(board.getPiecePosition(currentGame.getOtherPlayer(player), pieceThatCaptureKingID));
-						score += Piece.getPointValue(pieceThatCaptureKing.getType());
-					}
-				}
-			}
-			return score;
-		}
-		
-		
-		public static double getKingDangerScore(DFSTreeNode node) {
-			Player player = node.getMaxPlayer();
-			Player enemyPlayer = DefaultHeuristics.getMinPlayer(node);
-			Game game = node.getGame();
-			return getKingInDangerScore(enemyPlayer, game) - getKingInDangerScore(player, game);
-			
-		}
-		
-		
-		public static double getRatioOfNumberOfPiecesAttcking(DFSTreeNode node) {
-			//return number of max player pieces attacking - number of max player pieces (want a positive ratio)
-			return DefaultHeuristics.OffensiveHeuristics.getNumberOfPiecesMaxPlayerIsThreatening(node) -
-					DefaultHeuristics.DefensiveHeuristics.getNumberOfPiecesThreateningMaxPlayer(node);
-		}
-		
-			
-		
-		public static double CastleScore(DFSTreeNode node, Player player, Game currentGame) {
-			double score = 0;
-			Set<Piece> pieces = currentGame.getBoard().getPieces(player, PieceType.ROOK);
-			pieces.addAll(currentGame.getBoard().getPieces(player, PieceType.KING));
-			for(Piece piece : pieces)
-			{
-				for (Move move : currentGame.getAllMovesForPiece(player, piece)) {
-					if (move.getType() == MoveType.CASTLEMOVE) {
-						score += getKingDangerScore(node) * 1.5;
-					}
-				}
-			}
-			return score;
-		}
-		
+		Player p1 = getMaxPlayer(node);
+		//System.out.println(p1);
+		Player p2 = getMinPlayer(node);
 
-		
-		public static double getCastleScore(DFSTreeNode node) {
-			Player player = node.getMaxPlayer();
-			Player enemyPlayer = DefaultHeuristics.getMinPlayer(node);
-			Game game = node.getGame();
-			return CastleScore(node, player, game) - CastleScore(node, enemyPlayer, game);
-			
-		}
-		
-		
-		
-		
-		
-		
-		
-	} // End of newDefensiveHeuristics class
-	
-	
-	public static double getNewOffensiveHeuristicValue(DFSTreeNode node) {
-		// Get function that calls all methods in NewOffensiveHeuristic Class	
-		double damageDealtInThisNode = node.getGame().getBoard().getPointsEarned(DefaultHeuristics.getMaxPlayer(node));
-		double damageDealtInOtherNode = node.getGame().getBoard().getPointsEarned(DefaultHeuristics.getMinPlayer(node));
+		double p1Score = getPlayerScore(p1,node);
+		double p2Score = getPlayerScore(p2,node);
 
-		switch(node.getMove().getType())
-		{
-		case PROMOTEPAWNMOVE:
-			PromotePawnMove promoteMove = (PromotePawnMove)node.getMove();
-			damageDealtInThisNode += Piece.getPointValue(promoteMove.getPromotedPieceType());
-			break;
-		default:
-			break;
+		return p1Score - p2Score + (Integer.MAX_VALUE / 2);
+	}
+	private static Player getMaxPlayer(DFSTreeNode node){
+		return node.getMaxPlayer();
+	}
+	private static Player getMinPlayer(DFSTreeNode node){
+		return node.getGame().getOtherPlayer(getMaxPlayer(node));
+	}
+	private static double getPlayerScore(Player player,DFSTreeNode node){
+		Set<Piece> pieces = node.getGame().getBoard().getPieces(player);
+
+		double score = 0;
+
+		score += getMaterialValueForPieces(pieces); // Material Score, the basic idea
+		score += getPawnStructureScore(player,pieces,node); // Pawn Structure Score
+		score += getPiecePositionScore(player,pieces,node); // Center Control Score
+		score += getMobilityScore(player,node); // Mobility Score
+		return score;
+	}
+	private static double getPiecePositionScore(Player player, Set<Piece> pieces, DFSTreeNode node){
+		double score = 0.0;
+		// first lets create a set of pawns based on pieces, for future simplification
+		List<Set<Piece>> piecesByType = new ArrayList<>();
+		for (PieceType type : PieceType.values()){ // King - Queen - Bishop - Knight - Rook - Pawn
+			piecesByType.add(pieces.stream().filter(p -> p.getType().equals(type)).collect(Collectors.toSet()));
 		}
-		
-		damageDealtInThisNode = Math.max((damageDealtInThisNode - damageDealtInOtherNode), 0);
-		double offenseScore = newOffensiveHeuristics.getValueOfAttackingPieces(node) + newOffensiveHeuristics.getValueOfPieceFork(node);
-		return offenseScore + damageDealtInThisNode;
+		Set<Piece> notPawnsAndNotKing = pieces.stream().filter(p -> !p.getType().equals(PieceType.PAWN) && !p.getType().equals(PieceType.KING)).collect(Collectors.toSet());
+		score += getQueenPositionScore(player,piecesByType.get(1),node);
+		score += getRookPositionScore(player,piecesByType.get(4),node);
+		score += getBishopPositionScore(player,piecesByType.get(2),node);
+		score += getKnightPositionScore(player,piecesByType.get(3),node);
+		score += getPawnPositionScore(player,piecesByType.get(5),node);
+		score += getKingPositionScore(player,piecesByType.get(0).iterator().next(),notPawnsAndNotKing,node);
+
+		return score;
 	}
-	
-	public static double getNewDefensiveHeuristics(DFSTreeNode node) {
-		// Get function that calls all methods in NewDefensiveHeuristics Class
-		return DefaultHeuristics.DefensiveHeuristics.getClampedPieceValueTotalSurroundingMaxPlayersKing(node) + 
-				newDefensiveHeuristics.getKingDangerScore(node) + DefaultHeuristics.DefensiveHeuristics.getNumberOfMaxPlayersAlivePieces(node) + 
-				newDefensiveHeuristics.getRatioOfNumberOfPiecesAttcking(node) + newDefensiveHeuristics.getCastleScore(node);
+	private static double getPawnStructureScore(Player player, Set<Piece> pieces, DFSTreeNode node){
+		double score = 0.0;
+		// first lets create a set of pawns based on pieces, for future simplification
+
+		List<Piece> pawns = pieces.stream().filter(p -> p.getType().equals(PieceType.PAWN)).collect(Collectors.toList()); // Praise the Java 8
+
+		// Now let's see if we have any pawns at the same column, if so, deduct points
+		Board board = node.getGame().getBoard();
+		double doubledPawnsScore = 0;
+		double isolatedPawnsScore = 0;
+		double defenseScore = 0;
+		for (Piece pawn : pawns){
+			Coordinate pawnPos = pawn.getCurrentPosition(board);
+			int pawnCol = pawnPos.getYPosition();
+			int pawnRow = pawnPos.getXPosition();
+			int currentColPawns = 0;
+			boolean isolated = true;
+			int pawnDefenders = 0;
+			// check if there is a pawn in the same column, i.e. doubled pawns
+			for (Piece otherPawn : pawns){
+				Coordinate otherPawnPos = otherPawn.getCurrentPosition(board);
+				int otherPawnCol = otherPawnPos.getYPosition();
+				int otherPawnRow = otherPawnPos.getXPosition();
+				if (pawnCol == otherPawnCol){
+					currentColPawns++;
+				}
+				if ((Math.abs(pawnCol - otherPawnCol)) == 1){
+					isolated = false;
+				}
+				if ((Math.abs(pawnCol - otherPawnCol)) == 1 && (Math.abs(pawnRow - otherPawnRow)) == 1){
+					pawnDefenders++;
+				}
+			}
+
+			isolatedPawnsScore = (isolated) ? isolatedPawnsScore * 1.2 - 0.5 : isolatedPawnsScore;
+			doubledPawnsScore = (currentColPawns == 0) ? doubledPawnsScore : -0.5 * Math.pow(1.5,currentColPawns - 1);
+			defenseScore += pawnDefenders == 2 ? 3 : pawnDefenders * 1;
+		}
+		score = doubledPawnsScore + isolatedPawnsScore + defenseScore;
+		return score;
 	}
-	
-	public static double getBoardHeuristicValue(DFSTreeNode node) {
-		// Get function that calls all methods in BoardHeuristic Class
-		return BoardHeuristics.calculateMaterialAdvantage(node) + BoardHeuristics.getMobilityScore(node) +
-				DefaultHeuristics.getNonlinearPieceCombinationMaxPlayerHeuristicValue(node) + 
-				BoardHeuristics.getPointsEarnedScore(node) + BoardHeuristics.getcenterBoardScore(node);
+	private static double getPawnPositionScore(Player player, Set<Piece> pieces, DFSTreeNode node){
+		double[][] control = new double[][]{
+				new double[]{0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, 0.0, 0.0},
+				new double[]{0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, 0.0, 0.0},
+				new double[]{0.0, 5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0, 5.0, 0.0},
+				new double[]{0.0, 1.0,  1.0,  2.0,  4.0,  4.0,  2.0,  1.0, 1.0, 0.0},
+				new double[]{0.0, 0.5,  0.5,  1.0,  2.5,  2.5,  1.0,  0.5, 0.5, 0.0},
+				new double[]{0.0, 0.0,  0.0,  0.0,  2.0,  2.0,  0.0,  0.0, 0.0, 0.0},
+				new double[]{0.0, 0.5, -0.5, -1.0,  0.0,  0.0, -1.0, -0.5, 0.5, 0.0},
+				new double[]{0.0, 0.5,  1.0,  1.0, -2.0, -2.0,  1.0,  1.0, 0.5, 0.0},
+				new double[]{0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, 0.0, 0.0},
+				new double[]{0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, 0.0, 0.0},
+		};
+		double score = 0;
+
+		if (player.getPlayerType().equals(PlayerType.BLACK)){
+			Collections.reverse(Arrays.asList(control));
+		}
+		for (Piece p : pieces){
+			Coordinate pos = p.getCurrentPosition(node.getGame().getBoard());
+			score += control[pos.getYPosition()][pos.getXPosition()] * 10;
+		}
+
+		return score;
 	}
-	
-	
-	
-	
+	private static double getKnightPositionScore(Player player,Set<Piece> pieces, DFSTreeNode node){
+		double[][] control = new double[][]{
+				new double[]{0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0},
+				new double[]{0.0, -5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0,  0.0},
+				new double[]{0.0, -4.0, -2.0,  0.0,  0.0,  0.0,  0.0, -2.0, -4.0,  0.0},
+				new double[]{0.0, -3.0,  0.0,  1.0,  1.5,  1.5,  1.0,  0.0, -3.0,  0.0},
+				new double[]{0.0, -3.0,  0.5,  1.5,  2.0,  2.0,  1.5,  0.5, -3.0,  0.0},
+				new double[]{0.0, -3.0,  0.0,  1.5,  2.0,  2.0,  1.5,  0.0, -3.0,  0.0},
+				new double[]{0.0, -3.0,  0.5,  1.0,  1.5,  1.5,  1.0,  0.5, -3.0,  0.0},
+				new double[]{0.0, -4.0, -2.0,  0.0,  0.5,  0.5,  0.0, -2.0, -4.0,  0.0},
+				new double[]{0.0, -5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0,  0.0},
+				new double[]{0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0}
+		};
+
+		double score = 0;
+
+		if (player.getPlayerType().equals(PlayerType.WHITE)){
+			Collections.reverse(Arrays.asList(control));
+		}
+		for (Piece p : pieces){
+			Coordinate pos = p.getCurrentPosition(node.getGame().getBoard());
+			score += control[pos.getYPosition()][pos.getXPosition()] * 10;
+		}
+
+		return score;
+	}
+	private static double getBishopPositionScore(Player player,Set<Piece> pieces, DFSTreeNode node){
+		double[][] control = new double[][]{
+				new double[]{0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0},
+				new double[]{0.0, -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0,  0.0},
+				new double[]{0.0, -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0,  0.0},
+				new double[]{0.0, -1.0,  0.0,  0.5,  1.0,  1.0,  0.5,  0.0, -1.0,  0.0},
+				new double[]{0.0, -1.0,  0.5,  0.5,  1.0,  1.0,  0.5,  0.5, -1.0,  0.0},
+				new double[]{0.0, -1.0,  0.0,  1.0,  1.0,  1.0,  1.0,  0.0, -1.0,  0.0},
+				new double[]{0.0, -1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0, -1.0,  0.0},
+				new double[]{0.0, -1.0,  0.5,  0.0,  0.0,  0.0,  0.0,  0.5, -1.0,  0.0},
+				new double[]{0.0, -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0,  0.0},
+				new double[]{0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0}
+		};
+
+		double score = 0;
+
+		if (player.getPlayerType().equals(PlayerType.WHITE)){
+			Collections.reverse(Arrays.asList(control));
+		}
+		for (Piece p : pieces){
+			Coordinate pos = p.getCurrentPosition(node.getGame().getBoard());
+			score += control[pos.getYPosition()][pos.getXPosition()] * 10;
+		}
+		return score;
+	}
+	private static double getRookPositionScore(Player player,Set<Piece> pieces,DFSTreeNode node){
+		double[][] control = new double[][]{
+				new double[]{0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0},
+				new double[]{0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0},
+				new double[]{0.0,  0.5,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  0.5,  0.0},
+				new double[]{0.0, -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5,  0.0},
+				new double[]{0.0, -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5,  0.0},
+				new double[]{0.0, -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5,  0.0},
+				new double[]{0.0, -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5,  0.0},
+				new double[]{0.0, -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5,  0.0},
+				new double[]{0.0,  0.0,  0.0,  0.0,  0.5,  0.5,  0.0,  0.0,  0.0,  0.0},
+				new double[]{0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0},
+		};
+
+		double score = 0;
+
+		if (player.getPlayerType().equals(PlayerType.WHITE)){
+			Collections.reverse(Arrays.asList(control));
+		}
+		for (Piece p : pieces){
+			Coordinate pos = p.getCurrentPosition(node.getGame().getBoard());
+			score += control[pos.getYPosition()][pos.getXPosition()] * 10;
+		}
+		return score;
+	}
+	private static double getQueenPositionScore(Player player,Set<Piece> pieces,DFSTreeNode node){
+		double[][] control = new double[][]{
+				new double[]{0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0},
+				new double[]{0.0, -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0,  0.0},
+				new double[]{0.0, -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0,  0.0},
+				new double[]{0.0, -1.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0,  0.0},
+				new double[]{0.0, -0.5,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5,  0.0},
+				new double[]{0.0,  0.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0,  0.0,  0.0},
+				new double[]{0.0, -1.0,  0.5,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0,  0.0},
+				new double[]{0.0, -1.0,  0.0,  0.5,  0.0,  0.0,  0.0,  0.0, -1.0,  0.0},
+				new double[]{0.0, -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0,  0.0},
+				new double[]{0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0},
+		};
+
+		double score = 0;
+
+		if (player.getPlayerType().equals(PlayerType.WHITE)) {
+			for (double[] row : control){
+				Collections.reverse(Arrays.asList(row));
+			}
+			Collections.reverse(Arrays.asList(control));
+		}
+		for (Piece p : pieces){
+			Coordinate pos = p.getCurrentPosition(node.getGame().getBoard());
+			score += control[pos.getYPosition()][pos.getXPosition()] * 10;
+		}
+		return score;
+	}
+	private static double getKingPositionScore(Player player, Piece king, Set<Piece> otherPieces, DFSTreeNode node){
+		double[][] control;
+
+		// check if endgame
+		int numRooks = 0;
+		int numBishops = 0;
+		int numKnights = 0;
+		int numQueens = 0;
+		for (Piece p : otherPieces){
+			switch (p.getType()){
+				case ROOK:
+					numRooks++;
+					break;
+				case BISHOP:
+					numBishops++;
+					break;
+				case KNIGHT:
+					numKnights++;
+					break;
+				case QUEEN:
+					numQueens++;
+					break;
+			}
+		}
+		if ((numRooks + numBishops + numKnights + numQueens) <= 3){
+			control = new double[][]{
+				new double[]{ 0,  0,  0,  0,  0,  0,  0,  0,  0, 0},
+				new double[]{ 0, -5, -4, -3, -2, -2, -3, -4, -5, 0},
+				new double[]{ 0, -3, -2, -1,  0,  0, -1, -2, -3, 0},
+				new double[]{ 0, -3, -1,  2,  3,  3,  2, -1, -3, 0},
+				new double[]{ 0, -3, -1,  3,  4,  4,  3, -1, -3, 0},
+				new double[]{ 0, -3, -1,  3,  4,  4,  3, -1, -3, 0},
+				new double[]{ 0, -3, -1,  2,  3,  3,  2, -1, -3, 0},
+				new double[]{ 0, -3, -2,  0,  0,  0,  0, -2, -3, 0},
+				new double[]{ 0, -5, -4, -3, -2, -2, -3, -4, -5, 0},
+				new double[]{ 0,  0,  0,  0,  0,  0,  0,  0,  0, 0}
+			};
+		}else {
+			control = new double[][]{
+					new double[]{ 0,  0,  0,  0,  0,  0,  0,  0,  0, 0},
+					new double[]{ 0, -3, -4, -4, -5, -5, -4, -4, -3, 0},
+					new double[]{ 0, -3, -4, -4, -5, -5, -4, -4, -3, 0},
+					new double[]{ 0, -3, -4, -4, -5, -5, -4, -4, -3, 0},
+					new double[]{ 0, -3, -4, -4, -5, -5, -4, -4, -3, 0},
+					new double[]{ 0, -2, -3, -3, -4, -4, -3, -3, -2, 0},
+					new double[]{ 0, -1, -2, -2, -2, -2, -2, -2, -1, 0},
+					new double[]{ 0,  2,  2,  0,  0,  0,  0,  2,  2, 0},
+					new double[]{ 0,  2,  3,  1,  0,  0,  1,  3,  2, 0},
+					new double[]{ 0,  0,  0,  0,  0,  0,  0,  0,  0, 0}
+			};
+		}
+		double score = 0.0;
+
+		if (player.getPlayerType().equals(PlayerType.WHITE)){
+			Collections.reverse(Arrays.asList(control));
+		}
+
+		Coordinate pos = king.getCurrentPosition(node.getGame().getBoard());
+		score += control[pos.getYPosition()][pos.getXPosition()] * 10;
+
+		return score;
+	}
+	private static double getMobilityScore(Player player,DFSTreeNode node){
+		return (node.getGame().getAllMoves(player).size());
+	}
+
+	private static double getMaterialValueForPieces(Set<Piece> pieces){
+		double score = 0.0;
+
+		for (Piece piece : pieces){
+			switch (piece.getType()){
+				case PAWN:
+					score += 100;
+					break;
+				case KNIGHT:
+					score += 320;
+					break;
+				case BISHOP:
+					score += 330;
+					break;
+				case ROOK:
+					score += 500;
+					break;
+				case QUEEN:
+					score += 900;
+					break;
+				case KING:
+					score += 20000;
+					break;
+			}
+		}
+		return score;
+	}
 }
